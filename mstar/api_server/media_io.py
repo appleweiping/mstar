@@ -111,7 +111,11 @@ def save_base64(b64: str, fmt: str, modality_hint: str, upload_dir: Path) -> tup
     upload_dir = Path(upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
     # Some OpenAI clients omit trailing padding, but b64decode requires it.
-    padded = b64 + "=" * (-len(b64) % 4)
+    # Whitespace is stripped first: b64decode ignores it, so counting it here
+    # would compute the padding from the wrong length and reject line-wrapped
+    # input, which anything through a MIME encoder produces.
+    cleaned = "".join(b64.split())
+    padded = cleaned + "=" * (-len(cleaned) % 4)
     raw = base64.b64decode(padded)
     # Sanitize the client-controlled fmt: alphanumerics only, so it cannot
     # inject path separators into the upload path.
