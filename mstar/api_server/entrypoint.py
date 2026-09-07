@@ -777,9 +777,8 @@ async def generate(
     else:
         in_mods = [p.modality for p in parts]
 
-    parsed_kwargs = json.loads(model_kwargs) if model_kwargs else None
-
     try:
+        parsed_kwargs = json.loads(model_kwargs) if model_kwargs else None
         request_id = api_server.submit_request(
             text=text,
             file_paths=file_paths or None,
@@ -810,6 +809,11 @@ async def generate(
             "outputs": outputs,
         })
 
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="model_kwargs must be valid JSON",
+        ) from e
     except HTTPException:
         raise
     except Exception as e:
