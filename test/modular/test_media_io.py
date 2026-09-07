@@ -40,6 +40,25 @@ def test_data_url_roundtrip(tmp_path):
         assert f.read() == raw
 
 
+@pytest.mark.parametrize("raw", [b"R", b"RI", b"\x89PNG hello world"])
+@pytest.mark.parametrize("padded", [True, False])
+@pytest.mark.parametrize("wrap", [0, 4, 76])
+@pytest.mark.parametrize("trailing", ["", "\n", "\r\n"])
+def test_data_url_accepts_unpadded_and_whitespace(raw, padded, wrap, trailing, tmp_path):
+    encoded = base64.b64encode(raw).decode()
+    if not padded:
+        encoded = encoded.rstrip("=")
+    if wrap:
+        encoded = "\n".join(encoded[index : index + wrap] for index in range(0, len(encoded), wrap))
+    modality, path = media_io.save_data_url(
+        "data:image/png;base64," + encoded + trailing,
+        tmp_path,
+    )
+    assert modality == "image" and path.endswith(".png")
+    with open(path, "rb") as f:
+        assert f.read() == raw
+
+
 def test_save_base64_audio(tmp_path):
     raw = b"RIFFfake"
     modality, path = media_io.save_base64(base64.b64encode(raw).decode(), "wav", "audio", tmp_path)
