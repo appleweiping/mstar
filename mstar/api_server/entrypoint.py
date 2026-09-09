@@ -779,6 +779,19 @@ async def generate(
 
     try:
         parsed_kwargs = json.loads(model_kwargs) if model_kwargs else None
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="model_kwargs must be valid JSON",
+        ) from e
+
+    if parsed_kwargs is not None and not isinstance(parsed_kwargs, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="model_kwargs must be a JSON object",
+        )
+
+    try:
         request_id = api_server.submit_request(
             text=text,
             file_paths=file_paths or None,
@@ -809,11 +822,6 @@ async def generate(
             "outputs": outputs,
         })
 
-    except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=400,
-            detail="model_kwargs must be valid JSON",
-        ) from e
     except HTTPException:
         raise
     except Exception as e:
